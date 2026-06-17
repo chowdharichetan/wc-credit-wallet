@@ -112,6 +112,30 @@ class WCCW_Wallet_Admin {
 			}
 		}
 
+		// Handle manual adjustment trigger
+		if ( isset( $_POST['wccw_action'] ) && $_POST['wccw_action'] === 'adjust_balance' ) {
+			check_admin_referer( 'wccw_adjust_balance' );
+			$target_user_id = isset( $_POST['target_user_id'] ) ? (int) $_POST['target_user_id'] : 0;
+			$adj_amount     = isset( $_POST['adj_amount'] ) ? (float) $_POST['adj_amount'] : 0.0;
+			$adj_type       = isset( $_POST['adj_type'] ) ? sanitize_text_field( $_POST['adj_type'] ) : 'credit';
+			$adj_desc       = isset( $_POST['adj_desc'] ) ? sanitize_text_field( $_POST['adj_desc'] ) : '';
+
+			if ( $target_user_id && $adj_amount > 0 ) {
+				$success = false;
+				if ( $adj_type === 'credit' ) {
+					$success = WCCW_Wallet::credit( $target_user_id, $adj_amount, $adj_desc ? $adj_desc : esc_html__( 'Admin manual credit adjustment', 'wc-credit-wallet' ) );
+				} else {
+					$success = WCCW_Wallet::debit( $target_user_id, $adj_amount, $adj_desc ? $adj_desc : esc_html__( 'Admin manual debit adjustment', 'wc-credit-wallet' ) );
+				}
+
+				if ( $success ) {
+					echo '<div class="updated notice is-dismissible"><p>' . esc_html__( 'Wallet balance adjusted successfully.', 'wc-credit-wallet' ) . '</p></div>';
+				} else {
+					echo '<div class="error notice is-dismissible"><p>' . esc_html__( 'Failed to adjust balance. Check if user has sufficient funds for debit.', 'wc-credit-wallet' ) . '</p></div>';
+				}
+			}
+		}
+
 		?>
 		<div class="wrap">
 			<h1><?php esc_html_e( 'WooCommerce Credit Wallet Dashboard', 'wc-credit-wallet' ); ?></h1>
@@ -197,6 +221,38 @@ class WCCW_Wallet_Admin {
 		);
 
 		?>
+		<div class="card" style="margin-top: 10px; margin-bottom: 20px; padding: 15px; background: #fff; border: 1px solid #ccd0d4; max-width: 600px;">
+			<h3><?php esc_html_e( 'Manual Balance Adjustment', 'wc-credit-wallet' ); ?></h3>
+			<form method="POST" action="">
+				<?php wp_nonce_field( 'wccw_adjust_balance' ); ?>
+				<input type="hidden" name="wccw_action" value="adjust_balance" />
+				
+				<div style="margin-bottom: 10px;">
+					<label for="target_user_id" style="display: inline-block; width: 120px;"><strong><?php esc_html_e( 'User ID:', 'wc-credit-wallet' ); ?></strong></label>
+					<input type="number" id="target_user_id" name="target_user_id" required placeholder="e.g. 1" style="width: 100px; height: 28px;" />
+				</div>
+
+				<div style="margin-bottom: 10px;">
+					<label for="adj_amount" style="display: inline-block; width: 120px;"><strong><?php esc_html_e( 'Amount:', 'wc-credit-wallet' ); ?></strong></label>
+					<input type="number" id="adj_amount" name="adj_amount" step="any" min="0.01" required placeholder="e.g. 500" style="width: 100px; height: 28px;" />
+				</div>
+
+				<div style="margin-bottom: 10px;">
+					<label for="adj_type" style="display: inline-block; width: 120px;"><strong><?php esc_html_e( 'Action:', 'wc-credit-wallet' ); ?></strong></label>
+					<select id="adj_type" name="adj_type" style="width: 110px; height: 28px; vertical-align: top;">
+						<option value="credit"><?php esc_html_e( 'Add Credits', 'wc-credit-wallet' ); ?></option>
+						<option value="debit"><?php esc_html_e( 'Deduct Credits', 'wc-credit-wallet' ); ?></option>
+					</select>
+				</div>
+
+				<div style="margin-bottom: 15px;">
+					<label for="adj_desc" style="display: inline-block; width: 120px;"><strong><?php esc_html_e( 'Description:', 'wc-credit-wallet' ); ?></strong></label>
+					<input type="text" id="adj_desc" name="adj_desc" placeholder="Manual adjustment" style="width: 250px; height: 28px;" />
+				</div>
+
+				<input type="submit" class="button button-primary" value="<?php esc_attr_e( 'Adjust Balance', 'wc-credit-wallet' ); ?>" />
+			</form>
+		</div>
 		<table class="widefat fixed striped" style="margin-top: 10px;">
 			<thead>
 				<tr>
