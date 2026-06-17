@@ -69,7 +69,8 @@ class WC_Gateway_Wallet extends WC_Payment_Gateway {
 		$this->init_form_fields();
 		$this->init_settings();
 
-		// Define user front-end details
+		// Define status and user front-end details
+		$this->enabled     = $this->get_option( 'enabled', 'yes' );
 		$this->title       = $this->get_option( 'title', __( 'Wallet Payment', 'wc-credit-wallet' ) );
 		$this->description = $this->get_option( 'description', __( 'Pay using your credit wallet balance.', 'wc-credit-wallet' ) );
 
