@@ -139,6 +139,7 @@ class WCCW_Wallet {
 		}
 
 		$total_credits = 0;
+		$has_wallet_items = false;
 
 		foreach ( $order->get_items() as $item_id => $item ) {
 			$product = $item->get_product();
@@ -146,21 +147,34 @@ class WCCW_Wallet {
 				continue;
 			}
 
-			// Check if the product has credit meta
-			$credits = $product->get_meta( '_wallet_credits' );
+			$credits     = $product->get_meta( '_wallet_credits' );
+			$is_sub      = $product->get_meta( '_is_wallet_subscription' );
+			$sub_credits = $product->get_meta( '_subscription_credits' );
+
+			$item_credits = 0;
+
 			if ( ! empty( $credits ) && is_numeric( $credits ) ) {
+				$item_credits = (float) $credits;
+			} elseif ( $is_sub === 'yes' && ! empty( $sub_credits ) && is_numeric( $sub_credits ) ) {
+				$item_credits = (float) $sub_credits;
+			}
+
+			if ( $item_credits > 0 || $is_sub === 'yes' ) {
 				$qty = $item->get_quantity();
-				$total_credits += (float) $credits * $qty;
+				$total_credits += $item_credits * $qty;
+				$has_wallet_items = true;
 			}
 		}
 
-		if ( $total_credits > 0 ) {
-			$description = sprintf(
-				__( 'Credits purchased in Order #%s', 'wc-credit-wallet' ),
-				$order->get_order_number()
-			);
-			
-			$credited = self::credit( $user_id, $total_credits, $description, $order->get_id() );
+		if ( $has_wallet_items ) {
+			$credited = true;
+			if ( $total_credits > 0 ) {
+				$description = sprintf(
+					__( 'Credits purchased in Order #%s', 'wc-credit-wallet' ),
+					$order->get_order_number()
+				);
+				$credited = self::credit( $user_id, $total_credits, $description, $order->get_id() );
+			}
 			
 			if ( $credited ) {
 				$order->update_meta_data( '_wccw_credits_added', 'yes' );
@@ -236,10 +250,20 @@ class WCCW_Wallet {
 				continue;
 			}
 
-			$credits = $product->get_meta( '_wallet_credits' );
+			$credits     = $product->get_meta( '_wallet_credits' );
+			$is_sub      = $product->get_meta( '_is_wallet_subscription' );
+			$sub_credits = $product->get_meta( '_subscription_credits' );
+
+			$item_credits = 0;
 			if ( ! empty( $credits ) && is_numeric( $credits ) ) {
+				$item_credits = (float) $credits;
+			} elseif ( $is_sub === 'yes' && ! empty( $sub_credits ) && is_numeric( $sub_credits ) ) {
+				$item_credits = (float) $sub_credits;
+			}
+
+			if ( $item_credits > 0 ) {
 				$qty = $item->get_quantity();
-				$total_credits += (float) $credits * $qty;
+				$total_credits += $item_credits * $qty;
 			}
 		}
 

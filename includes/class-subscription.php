@@ -12,6 +12,9 @@ class WCCW_Subscription {
 		// Hook into order credits awarded to check for subscription purchases
 		add_action( 'wccw_order_credits_awarded', array( __CLASS__, 'create_subscription_from_order' ), 10, 3 );
 
+		// Hook into order status changes to cancel subscriptions if the purchase order is cancelled, failed, or refunded
+		add_action( 'woocommerce_order_status_changed', array( __CLASS__, 'handle_order_status_change' ), 10, 4 );
+
 		// Register cron hooks
 		add_action( 'wccw_subscription_renewal_cron', array( __CLASS__, 'process_subscriptions' ) );
 
@@ -21,6 +24,23 @@ class WCCW_Subscription {
 
 		// Handle cancellation action from frontend
 		add_action( 'init', array( __CLASS__, 'handle_user_cancellation' ) );
+	}
+
+	/**
+	 * Automatically cancel subscriptions if the initial purchase order fails, is cancelled, or refunded.
+	 */
+	public static function handle_order_status_change( $order_id, $old_status, $new_status, $order ) {
+		if ( in_array( $new_status, array( 'cancelled', 'failed', 'refunded' ), true ) ) {
+			global $wpdb;
+			$table = WCCW_Wallet_DB::get_subscriptions_table();
+			$wpdb->update(
+				$table,
+				array( 'status' => 'cancelled' ),
+				array( 'order_id' => $order_id ),
+				array( '%s' ),
+				array( '%d' )
+			);
+		}
 	}
 
 	/**
