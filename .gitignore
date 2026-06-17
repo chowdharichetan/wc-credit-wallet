@@ -1,0 +1,19 @@
+# IDE and Editor Files
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.swp
+
+# OS Files
+.DS_Store
+Thumbs.db
+
+# PHP/PHPUnit/Scratch Test Files
+/tests/
+*test*.php
+/scratch/
+vendor/
+composer.lock
