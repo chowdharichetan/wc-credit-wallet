@@ -105,6 +105,21 @@ class WC_Gateway_Wallet extends WC_Payment_Gateway {
 	}
 
 	/**
+	 * Get gateway description with dynamic user balance information.
+	 *
+	 * @return string
+	 */
+	public function get_description() {
+		$description = parent::get_description();
+		$user_id = get_current_user_id();
+		if ( $user_id ) {
+			$balance = WCCW_Wallet::get_balance( $user_id );
+			$description .= '<br><strong>' . sprintf( __( 'Your current balance: %s credits', 'wc-credit-wallet' ), number_format_i18n( $balance, 2 ) ) . '</strong>';
+		}
+		return $description;
+	}
+
+	/**
 	 * Process payment for checkout.
 	 *
 	 * @param int $order_id Order ID.
